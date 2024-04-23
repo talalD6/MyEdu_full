@@ -21,6 +21,9 @@ import Switch from '@mui/material/Switch';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { visuallyHidden } from '@mui/utils';
+import CustomizedMenus from './CustomizedMenus';
+import axios from 'axios';
+import CustomizedMenusCourses from './CustomizedMenusCourses';
 
 
 function descendingComparator(a, b, orderBy) {
@@ -57,35 +60,41 @@ function stableSort(array, comparator) {
 
 const headCells = [
   {
-    id: 'courseId',
+    id: 'title',
     numeric: false,
     disablePadding: true,
-    label: 'course Id',
+    label: 'title',
   },
   {
-    id: 'courseName',
+    id: 'category',
     numeric: false,
     disablePadding: false,
-    label: 'course name',
+    label: 'creator',
   },
   {
-    id: 'creatorName',
+    id: 'category',
     numeric: false,
     disablePadding: false,
-    label: 'creator name',
+    label: 'category',
   },
   {
-    id: 'totalOrders',
+    id: 'rating',
     numeric: false,
     disablePadding: false,
-    label: 'total orders',
+    label: 'rating',
   },
-  // {
-  //   id: 'protein',
-  //   numeric: true,
-  //   disablePadding: false,
-  //   label: 'Protein (g)',
-  // },
+  {
+    id: 'isPublish',
+    numeric: false,
+    disablePadding: false,
+    label: 'isPublish',
+  },
+  {
+    id: 'price',
+    numeric: false,
+    disablePadding: false,
+    label: 'price',
+  },
 ];
 
 function EnhancedTableHead(props) {
@@ -174,7 +183,7 @@ function EnhancedTableToolbar(props) {
           id="tableTitle"
           component="div"
         >
-          Nutrition
+          All users
         </Typography>
       )}
 
@@ -184,6 +193,14 @@ function EnhancedTableToolbar(props) {
             <DeleteIcon />
           </IconButton>
         </Tooltip>
+        // <div className='toolbar'>
+        //   change the role
+        //   <Tooltip title="Delete">
+        //     <IconButton>
+        //       <DeleteIcon />
+        //     </IconButton>
+        //   </Tooltip>
+        // </div>
       ) : (
         <Tooltip title="Filter list">
           <IconButton>
@@ -199,16 +216,15 @@ EnhancedTableToolbar.propTypes = {
   numSelected: PropTypes.number.isRequired,
 };
 
-export default function EnhancedTable({ rows }) {
+export default function TableCourses({ rows }) {
   const [order, setOrder] = React.useState('asc');
   const [orderBy, setOrderBy] = React.useState('calories');
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
- 
 
-  
+
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
@@ -256,6 +272,28 @@ export default function EnhancedTable({ rows }) {
     setDense(event.target.checked);
   };
 
+  const setIsPublish = async(isPublish,courseId) => {
+    try {
+      const response = await axios.put(`http://localhost:5000/api/change-publish/${courseId}`, { isPublish });
+      window.location.reload();
+      return response.data; // Assuming the server returns the updated user data
+    } catch (error) {
+      console.error('Error changing user role:', error);
+      throw error; // Optionally handle or rethrow the error
+    }
+  }
+
+  const deleteCourse = async(courseId) => {
+    try {
+      const response = await axios.delete(`http://localhost:5000/api/courses/${courseId}`);
+      window.location.reload();
+      return response.data; // Assuming the server returns the updated user data
+    } catch (error) {
+      console.error('Error changing user role:', error);
+      throw error; // Optionally handle or rethrow the error
+    }
+  }
+
   const isSelected = (id) => selected.indexOf(id) !== -1;
 
   // Avoid a layout jump when reaching the last page with empty rows.
@@ -291,23 +329,23 @@ export default function EnhancedTable({ rows }) {
             />
             <TableBody>
               {visibleRows.map((row, index) => {
-                const isItemSelected = isSelected(row.courseId);
+                const isItemSelected = isSelected(row._id);
                 const labelId = `enhanced-table-checkbox-${index}`;
 
                 return (
                   <TableRow
                     hover
-                    onClick={(event) => handleClick(event, row.courseId)}
                     role="checkbox"
                     aria-checked={isItemSelected}
                     tabIndex={-1}
-                    key={row.courseId}
+                    key={row._id}
                     selected={isItemSelected}
                     sx={{ cursor: 'pointer' }}
                   >
                     <TableCell padding="checkbox">
                       <Checkbox
                         color="primary"
+                        onClick={(event) => handleClick(event, row._id)}
                         checked={isItemSelected}
                         inputProps={{
                           'aria-labelledby': labelId,
@@ -320,12 +358,19 @@ export default function EnhancedTable({ rows }) {
                       scope="row"
                       padding="none"
                     >
-                      {row.courseId}
+                      {row.title}
                     </TableCell>
-                    {/* <TableCell align="right">{row.courseId}</TableCell> */}
-                    <TableCell align="left">{row.courseName}</TableCell>
-                    <TableCell align="left">{row.creatorName}</TableCell>
-                    <TableCell align="left">{row.totalOrders}</TableCell>
+                    <TableCell align="left">{row.creator.username}</TableCell>
+                    <TableCell align="left">{row.category}</TableCell>
+                    <TableCell align="left">{row.rating}</TableCell>
+                    <TableCell align="left">{row.isPublish ? 'publish' : 'inpublish'}</TableCell>
+                    <TableCell align="left">{row.price}</TableCell>
+                    <TableCell align="right"><CustomizedMenusCourses isPublish={row.isPublish} id={row._id} setIsPublish={setIsPublish} deleteCourse={deleteCourse} /></TableCell>
+                    {/* <TableCell align="left">
+                        <div>
+                          <i class='bx bx-dots-horizontal-rounded'></i>
+                        </div>
+                    </TableCell> */}
                   </TableRow>
                 );
               })}
